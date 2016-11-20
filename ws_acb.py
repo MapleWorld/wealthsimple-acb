@@ -1,4 +1,5 @@
-
+from decimal import *
+import pprint
 # Adjusted Cost Basis
 # D1: Buy 10 of ABC @ $5/unit: 10 units at $5/unit
 # D2: Buy 10 of ABC @ $10/unit: 20 units at ((10 * 5) + (10 * 10))/(10 + 10) = $7.5/unit
@@ -51,14 +52,17 @@ for r in rates[1:]:
 	rate[r[0]] = r[1]
 
 #Quick lookup function to rate table returning exchange rate on day 'x'
-xrate = lambda x: float(rate[x])
+xrate = lambda x: c(rate[x])
+
+#Store monetary amounts with 4 decimal places as per accounting principles
+c = lambda x: Decimal(format(Decimal(x), '.4f'))
 
 
 class Asset():
 	def __init__(self, symbol, quantity, acb, currency):
 		self.symbol = symbol
-		self.quantity = float(quantity)
-		self.acb = float(acb)
+		self.quantity = int(quantity)
+		self.acb = Decimal(acb, '.4f')
 		self.currency = currency
 
 	def buy(self, date, quantity, price):
@@ -66,15 +70,13 @@ class Asset():
 		exrate = 1
 		if self.currency == "USD":
 			exrate = xrate(date)
-
-		self.acb = ((self.acb * self.quantity) + (float(quantity) * float(price) * exrate)) / (self.quantity + float(quantity))
-		self.quantity += float(quantity)
+		self.acb = c(((self.acb * self.quantity) + (int(quantity) * c(price) * exrate)) / (self.quantity + int(quantity)))
+		self.quantity += int(quantity)
 
 	def sell(self, quantity):
-		self.quantity -= float(quantity)
-
-	def __repr__(self):
-		return "You own %i shares of asset %s at an average cost of $%s per share" % (self.quantity, self.symbol, str(self.acb))
+		self.quantity -= int(quantity)
+		if self.quantity == 0:
+			self.acb = 0
 
 	def info(self):
 		return "You own %i shares of asset %s at an average cost of $%s per share" % (self.quantity, self.symbol, str(self.acb))
@@ -85,10 +87,7 @@ class Portfolio():
 		self.assets = {}
 
 	def contains_asset(self, symbol):
-		if symbol in self.assets.keys():
-			return True
-		else:
-			return False
+		return True if symbol in self.assets.keys() else False
 
 	def add_asset(self, symbol, currency):
 		self.assets[symbol] = Asset(symbol, 0, 0, currency)
@@ -100,7 +99,7 @@ class Portfolio():
 		positions = []
 		for symbol in self.assets.keys():
 			positions.append(self.assets[symbol].info())
-		print positions
+		pprint.pprint(positions)
 
 
 portfolio = Portfolio()
